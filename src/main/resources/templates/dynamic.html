@@ -1,0 +1,150 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dynamic Fields</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" type="text/css" media="all" href="../static/css/style.css" th:href="@{/css/style.css}"/>
+</head>
+<body>
+	<h1><a th:href="@{/index}">&lt;&lt;</a> 动态表单操作</h1>
+	<div>
+		<h2>User List</h2>
+		<form action="#" th:action="@{/dynamic}" method="post">
+			<table th:unless="${#lists.isEmpty(allUsers)}">
+				<thead>
+					<tr>
+						<th>ID</th><th>Name</th><th>Nation</th><th>Age</th><th>Gender</th><th>Admin</th><th>Birth</th><th>Comment</th><th>ShowMode</th><th>Password</th><th>Operation</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="u : ${allUsers}">
+						<td th:text="*{u.id}"></td>
+						<td th:text="*{u.name}"></td>
+						<td th:text="*{u.nationality}"></td>
+						<td th:text="*{u.age}"></td>
+						<td th:text="*{u.gender}"></td>
+						<td th:text="*{u.admin} ? #{bool.true} : #{bool.false}"></td>
+						<td th:text="*{{u.birth}}"></td>
+						<td th:text="*{u.comment}"></td>
+						<td th:text="*{#strings.arrayJoin(#messages.arrayMsg(#strings.arrayPrepend(u.showMode, 'show.mode.type.')),', ')}"></td>
+						<td th:text="*{u.password}"></td>
+						<td>
+							<button type="submit" name="removeUser" th:if="*{u.id gt 5}" th:value="*{u.id}">Remove</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</form>
+	</div>
+	<div>
+		<h2>Add User Info</h2>
+		
+		<h3>Show Errors Outside form</h3>
+		
+		<div th:errors="${user}"></div>
+		<div th:errors="${user.birth}"></div>
+		<div th:errors="${user.*}"></div>
+
+		<div th:if="${#fields.hasErrors('${user}')}">
+			<p th:each="err : ${#fields.errors('${user}')}" th:text="${err}"></p>
+		</div>
+		<div th:if="${#fields.hasErrors('${user.birth}')}">
+			<p th:each="err : ${#fields.errors('${user.birth}')}" th:text="${err}"></p>
+		</div>
+		<div th:if="${#fields.hasErrors('${user.*}')}">
+			<p th:each="err : ${#fields.errors('${user.*}')}" th:text="${err}"></p>
+		</div>
+		
+		<form action="#" th:action="@{/dynamic}" th:object="${user}" method="post">
+			<fieldset>
+				<legend>User Info</legend>
+				
+				<h3>All Errors</h3>
+				<ul th:if="${#fields.hasErrors('*')}">
+					<li th:each="err : ${#fields.errors('*')}" th:text="${err}">Input is incorrect</li>
+				</ul>
+				<p class="errors" th:if="${#fields.hasErrors('all')}" th:errors="*{all}">Input is incorrect</p>
+				<ul th:if="${#fields.hasAnyErrors()}">
+					<li th:each="err : ${#fields.allErrors()}" th:text="${err}"></li>
+				</ul>
+				
+				<h3>Global Errors</h3>
+				<ul th:if="${#fields.hasErrors('global')}">
+					<li th:each="err : ${#fields.errors('global')}" th:text="${err}">Input is incorrect</li>
+				</ul>
+				<p th:if="${#fields.hasErrors('global')}" th:errors="*{global}">Input is incorrect</p>
+				<div th:if="${#fields.hasGlobalErrors()}">
+					<p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+				</div>
+				
+				<h3>Rich Error Object</h3>
+				<ul>
+					<li th:each="e : ${#fields.detailedErrors()}" th:class="${e.global}? globalerr : fielderr">
+						<span th:text="${e.global} ? '*' : ${e.fieldName}">The field name</span> |
+						<span th:text="${e.message}">The error message</span>
+					</li>
+				</ul>
+		
+				<div>
+					<label for="firstName">FirstName</label>
+					<input type="text" th:field="*{firstName}"/>
+				</div>
+				<div>
+					<label for="lastName">LastName</label>
+					<input type="text" th:field="*{lastName}"/>
+				</div>
+				<div>
+					<label for="nationality">Nation</label>
+					<input type="text" th:field="*{nationality}"/>
+				</div>
+				<div>
+					<label for="age">Age</label>
+					<input type="text" th:field="*{age}"/>
+				</div>
+				<div>
+					<label for="gender">Gender</label>
+					<select th:field="*{gender}">
+						<option th:each="g : ${genders}" th:value="${g.key}" th:text="${g.value}"></option>
+					</select>
+				</div>
+				<div>
+					<label>ShowMode</label>
+					<ul>
+						<li th:each="sm : ${showModes}">
+							<input type="checkbox" th:field="*{showMode}" th:value="${sm}"/>
+							<label th:for="${#ids.prev('showMode')}" th:text="#{${'show.mode.type.' + sm}}"></label>
+						</li>
+					</ul>
+				</div>
+				<div>
+					<label th:for="${#ids.next('admin')}">isAdmin</label>
+					<input type="checkbox" th:field="*{admin}" />
+				</div>
+				<div>
+					<label for="birth">Birthday</label>
+					<input type="text" th:field="*{birth}" th:errorclass="fieldError"/>
+					<!-- Field Error -->
+					<!--/*
+					<input type="text" th:field="*{birth}" th:class="${#fields.hasErrors('birth')} ? fieldError"/>
+					*/-->
+					<ul>
+						<li th:each="err : ${#fields.errors('birth')}" th:text="${err}" />
+					</ul>
+					<p th:if="${#fields.hasErrors('birth')}" th:errors="*{birth}">Incorrect date</p>
+				</div>
+				<div>
+					<label for="comment">Comment</label>
+					<textarea th:field="*{comment}"></textarea>
+				</div>
+				<div>
+					<label for="password">Password</label>
+					<input type="password" th:field="*{password}"/>
+				</div>
+				<div class="submit">
+					<button type="submit" name="addUser">Add User</button>
+				</div>
+			</fieldset>
+		</form>
+	</div>
+</body>
+</html>
