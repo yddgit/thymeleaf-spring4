@@ -1,0 +1,379 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Thymeleaf Notes(Spring4)</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" type="text/css" media="all" href="../static/css/style.css" th:href="@{/css/style.css}"/>
+</head>
+<body>
+	<div>
+		<h1>Thymeleaf Notes(Spring4)</h1>
+	</div>
+	<ul>
+		<li><p>Message: <code>#{...}</code></p></li>
+		<li><p>变量: <code>${...}/*{...}</code></p></li>
+		<li><p>URL: <code>@{...}</code></p></li>
+		<li><p>Spring: <code>${@myBean.doSomething()}</code></p></li>
+	</ul>
+	<h2>概览</h2>
+	<ol>
+		<li>
+			<p>Thymeleaf与Spring集成</p>
+			<ul>
+				<li>将Controller返回的数据渲染在Thymeleaf的模板上，与JSP类似</li>
+				<li>使用Spring Expression Language（SpringEL表达式）替换OGNL表达式</li>
+				<li>在模板上进行表单数据绑定及表单验证等</li>
+				<li>使用Spring管理的资源文件来获取message</li>
+			</ul>
+		</li>
+		<li>
+			<p>使用SrpingStandard Dialect</p>
+			<ul>
+				<li><code>${...}</code>和<code>*{...}</code>将被Spring EL表达式引擎解析</li>
+				<li>直接在模板中访问Spring中的bean：<code>${@myBean.doSomething()}</code>，如: <span th:text="${@myService.sayHello()}"></span></li>
+				<li>增加属性：<code>th:field、th:errors、th:errorclass</code>，以及重新实现了<code>th:object</code>属性</li>
+				<li>增加预置变量：<code>#themes.code(...)</code>，与Spring中的<code>spring:theme</code>JSP标签功能相同</li>
+				<li>增加预置变量：<code>#mvc.uri(...)</code>，与Spring中的<code>spring:mvcUrl(...)</code>JSP函数功能相同（只支持Spring 4.1及以上的版本）</li>
+				<li>新的DTD验证，包含以上新加属性的定义及对应的DOCTYPE的转换规则</li>
+			</ul>
+			<p>使用新的模板引擎实例<code>org.thymeleaf.spring4.SpringTemplateEngine</code></p>
+			<p>以下是配置示例</p>
+			<p>
+				<code>
+				&lt;bean id="templateResolver" class="org.thymeleaf.templateresolver.ServletContextTemplateResolver"&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="prefix" value="/WEB-INF/templates/" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="suffix" value=".html" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="templateMode" value="HTML5" /&gt;<br/>
+				&lt;/bean&gt;<br/>
+				&lt;bean id="templateEngine" class="org.thymeleaf.spring4.SpringTemplateEngine"&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="templateResolver" ref="templateResolver" /&gt;<br/>
+				&lt;/bean&gt;
+				</code>
+			</p>
+		</li>
+		<li>
+			<p>Views and View Resolvers</p>
+			<p>在SpringMVC中配置JSP做为View层时的配置如下</p>
+			<p>
+				<code>
+				&lt;bean class="org.springframework.web.servlet.view.InternalResourceViewResolver"&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="viewClass" value="org.springframework.web.servlet.view.JstlView" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="prefix" value="/WEB-INF/jsps/" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="suffix" value=".jsp" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="order" value="2" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="viewNames" value="*jsp" /&gt;<br/>
+				&lt;/bean&gt;
+				</code>
+			</p>
+			<p>如果使用Thymeleaf处理View层，则有类似的配置</p>
+			<p>
+				<code>
+				&lt;bean class="org.thymeleaf.spring4.view.ThymeleafViewResolver"&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="templateEngine" ref="templateEngine" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="order" value="1" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="viewNames" value="*.html,*.xhtml" /&gt;<br/>
+				&lt;/bean&gt;
+				</code>
+			</p>
+			<p>这里<code>prefix</code>和<code>suffix</code>在配置<code>templateResolver</code>时已经指定过了，所以无需再配置</p>
+			<p>还可以指定静态View变量，如下</p>
+			<p>
+				<code>
+				&lt;bean name="main" class="org.thymeleaf.spring4.view.ThymeleafView"&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="staticVariables"&gt;<br/>
+				&nbsp;&nbsp;&nbsp;&nbsp;&lt;map&gt;<br/>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;entry key="footer" value="Some company: &amp;lt;b&amp;gt;ACME&amp;lt;/b&amp;gt;" /&gt;<br/>
+				&nbsp;&nbsp;&nbsp;&nbsp;&lt;/map&gt;<br/>
+				&nbsp;&nbsp;&lt;/property&gt;<br/>
+				&lt;/bean&gt;
+				</code>
+			</p>
+		</li>
+		<li>
+			<p>基于Spring的模板解析</p>
+			<p>Thymeleaf为Spring提供了其他的模板解析器实现</p>
+			<ul>
+				<li><code>org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver</code></li>
+				<li><code>org.thymeleaf.spring4.resourceresolver.SpringResourceResourceResolver</code></li>
+			</ul>
+			<p>这些解析器可以使用Spring解析资源的语法来定位和解析模板文件，配置如下</p>
+			<p>
+				<code>
+				&lt;bean id="templateResolver" class="org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver"&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="suffix" value=".html" /&gt;<br/>
+				&nbsp;&nbsp;&lt;property name="templateMode" value="HTML5" /&gt;<br/>
+				&lt;/bean&gt;
+				</code>
+			</p>
+			<p>基于以是配置，可以使用如下方法返回view</p>
+			<p>
+				<code>
+				@RequestMapping("/doit")<br/>
+				public String doIt() {<br/>
+				&nbsp;&nbsp;...<br/>
+				&nbsp;&nbsp;return "<b>classpath:resources/templates/doit</b>";<br/>
+				}
+				</code>
+			</p>
+			<p>这些模板解析器并不是Thymeleaf的默认配置，只是Thymeleaf提供的一个可选的模板解析器实现</p>
+		</li>
+	</ol>
+	<h2>简单示例</h2>
+	<ol>
+		<li>
+			<p>使用Controller中的<code>@ModelAttribute</code></p>
+			<p>
+				<table th:unless="${#lists.isEmpty(allUsers)}">
+					<tr>
+						<th>NAME</th><th>AGE</th><th>NATION</th>
+					</tr>
+					<tr th:each="u : ${allUsers}" th:class="${uStat.odd} ? 'odd'">
+						<td th:text="${u.name}"></td><td th:text="${u.age}"></td><td th:text="${u.nationality}"></td>
+					</tr>
+				</table>
+				<b th:if="${#lists.isEmpty(allUsers)}">No users in list!!!</b>
+			</p>
+		</li>
+		<li>
+			<p>使用Spring的<code>ConversionService</code>：<code>${{...}}</code></p>
+			<p th:text="${{date}}"></p>
+			<p>使用message资源文件来定义布尔值的显示</p>
+			<p th:text="${bool} ? #{bool.true} : #{bool.false}"></p>
+			<p>显示Enum类型的变量值</p>
+			<p th:text="#{${'show.mode.type.' + showMode }}"></p>
+			<p>批量处理集合类型的数据</p>
+			<p th:text="${#strings.arrayJoin(
+							#messages.arrayMsg(
+								#strings.arrayPrepend(showModes, 'show.mode.type.')
+							),
+							', '
+						)}"></p>
+		</li>
+	</ol>
+	<h2>表单操作</h2>
+	<ol>
+		<li>
+			<p>使用命令对象（command object）</p>
+			<!--/* th:unless="${(not #maps.containsKey(#ctx.variables, 'user')) or (#objects.nullSafe(user, 'noUser') ne 'noUser')}" */-->
+			<form action="#" th:action="@{/index}" th:object="${user}" method="post">
+				<fieldset>
+					<legend>Add/Edit User Info</legend>
+					<div>
+						<label for="firstName">FirstName</label>
+						<input type="text" th:field="*{firstName}"/>
+					</div>
+					<div>
+						<label for="lastName">LastName</label>
+						<input type="text" th:field="*{lastName}"/>
+					</div>
+					<div>
+						<label for="nationality">Nation</label>
+						<input type="text" th:field="*{nationality}"/>
+					</div>
+					<div>
+						<label for="age">Age</label>
+						<input type="text" th:field="*{age}"/>
+					</div>
+					<div>
+						<label for="gender">Gender</label>
+						<select th:field="*{gender}">
+							<option th:each="g : ${genders}" th:value="${g.key}" th:text="${g.value}"></option>
+						</select>
+					</div>
+					<div>
+						<label>Gender</label>
+						<ul>
+							<li th:each="g : ${genders}">
+								<input type="radio" th:field="*{gender}" th:value="${g.key}"/>
+								<label th:for="${#ids.prev('gender')}" th:text="${g.value}"></label>
+							</li>
+						</ul>
+					</div>
+					<div>
+						<label>ShowMode</label>
+						<ul>
+							<li th:each="sm : ${showModes}">
+								<input type="checkbox" th:field="*{showMode}" th:value="${sm}"/>
+								<label th:for="${#ids.prev('showMode')}" th:text="#{${'show.mode.type.' + sm}}"></label>
+							</li>
+						</ul>
+					</div>
+					<div>
+						<label th:for="${#ids.next('admin')}">isAdmin</label>
+						<input type="checkbox" th:field="*{admin}" />
+					</div>
+					<div>
+						<label th:for="${#ids.next('admin')}">isAdmin</label>
+						<input type="radio" th:field="*{admin}" value="true" />
+					</div>
+					<div>
+						<label for="birth">Birthday</label>
+						<input type="text" th:field="*{birth}"/>
+					</div>
+					<div>
+						<label for="comment">Comment</label>
+						<textarea th:field="*{comment}"></textarea>
+					</div>
+					<div>
+						<label for="password">Password</label>
+						<input type="password" th:field="*{password}"/>
+					</div>
+				</fieldset>
+			</form>
+			<p>这里<code>th:object</code>使用有两点限制</p>
+			<ul>
+				<li>
+					<p><code>th:object</code>的值必须是Model变量（<code>model attribute</code>）<code>${...}</code></p>
+					<p>不能是某个变量的一个属性，即：<code>${object}</code>可以，但<code>${object.prop}</code>不行</p>
+				</li>
+				<li><code>&lt;form&gt;</code>标签内部不能再出现<code>th:object</code>属性</li>
+			</ul>
+		</li>
+		<li>
+			<p>Input标签</p>
+			<p>使用<code>th:field</code>属性：<code>&lt;input type="text" th:field="*{prop}" /&gt;</code></p>
+			<p>
+				<code>th:field</code>属性会根据<code>&lt;input&gt;, &lt;select&gt;, &lt;textarea>&gt;</code>不同解析出不同的内容，
+				而且根据<code>&lt;input&gt;</code>的<code>type</code>属性不同也会做不同的处理
+			</p>
+			<p><code>th:field</code>还会自动应用Spring的Conversion Service转换数据</p>
+			<p>对于<code>&lt;input&gt;</code>的<code>type</code>属性，还支持最新的HTML5标签的<code>type="datetime", type="color"</code>等</p>
+		</li>
+		<li>
+			<p>CheckBox</p>
+			<p>对于单值的CheckBox，其对应的<code>&lt;label&gt;</code>标签的<code>for</code>属性，可以使用<code>th:for="${#ids.next('prop')}"</code>，来取得解析后，被展示在页面的CheckBox标签的<code>id</code>属性值</p>
+			<p>对于多个值的CheckBox，其对应的<code>&lt;label&gt;</code>标签的<code>for</code>属性，可以使用<code>th:for="${#ids.prev('prop')}"</code>，来取得解析后，被展示在页面的CheckBox标签的<code>id</code>属性值</p>
+			<p>CheckBox在解析过后会多出一个隐藏的<code>input</code>： <code>&lt;input name="_features" type="hidden" value="on" /&gt;</code>，原因是</p>
+			<p>They are automatically added in order to avoid problems with browsers not sending unchecked checkbox values to the server upon form submission.</p>
+			<p>当然，<code>th:field</code>属性会自动勾选CheckBox的值，添加<code>checked="checked"</code>属性</p>
+		</li>
+		<li>RadioButton与CheckBox类似</li>
+		<li>
+			<p><a th:href="@{/dynamic}">动态表单域 &gt;&gt;</a></p>
+			<p>动态数组下标</p>
+			<table th:unless="${#lists.isEmpty(allUsers)}">
+				<tr>
+					<th>NAME</th><th>AGE</th><th>NATION</th>
+				</tr>
+				<tr th:each="u : ${allUsers}" th:class="${uStat.odd} ? 'odd'">
+					<td th:text="*{allUsers[__${uStat.index}__].name}"></td>
+					<td th:text="*{allUsers[__${uStat.index}__].age}"></td>
+					<td th:text="${allUsers[__${uStat.index}__].nationality}"></td>
+				</tr>
+			</table>
+			<p>Thymeleaf表达式引擎会解析数组下标<code>[]</code>中的表达式，但SpringEL表达式引擎不会解析<code>[]</code>中的内容</p>
+			<p>所以必须使用表达式预处理的语法<code>${array[__${array.index}__].prop}</code>才能正确引用到列表元素</p>
+		</li>
+		<li>
+			<p>表单验证</p>
+			<p>当表单数据绑定出错，如类型转换失败、参数值非法，Spring会返回相应的错误信息，可以根据出错信息（<code>#fields.hasErrors('prop')</code>）设置表单元素的样式</p>
+			<p>
+				<code>th:class="${#fields.hasErrors('prop')} ? errorClassName"</code>
+			</p>
+			<p>如果有多个错误，则可以循环显示所有错误信息，使用<code>#fields.errors('prop')</code>获取对应属性的错误信息</p>
+			<p>
+				<code>
+				&lt;ul&gt;<br/>
+				&nbsp;&nbsp;&lt;li th:each="err : ${#fields.errors('datePlanted')}" th:text="${err}" /&gt;<br/>
+				&lt;/ul&gt;
+				</code>
+			</p>
+			<p>也可以不用循环，使用<code>th:errors</code>属性显示所有错误信息，每个信息之间用<code>&lt;br/&gt;</code>隔开</p>
+			<p>
+				<code>
+				&lt;p th:if="${#fields.hasErrors('prop')}" th:errors="*{prop}"&gt;Incorrect value&lt;/p&gt;
+				</code>
+			</p>
+			<p>以上设置，还可以使用属性<code>th:errorclass</code>直接完成</p>
+			<p><code>&lt;input type="text" th:field="*{prop}" th:errorclass="errorClassName"/&gt;</code></p>
+			<p><code>th:errorclass</code>会根据表单元素的<code>name</code>或<code>th:field</code>属性值去查找对应的表单元素追加指定的class</p>
+		</li>
+		<li>
+			<p>所有错误</p>
+			<p>只需要将这两个方法<code>#fields.hasErrors('prop')</code>和<code>#fields.errors('prop')</code>的参数改为<code>*</code>或是<code>all</code>即可取得全部错误信息</p>
+			<p><code>#fields.hasErrors('*')</code>、<code>#fields.errors('*')</code></p>
+			<p>另外<code>#fields.hasErrors('*')</code>等同于<code>#fields.hasAnyErrors()</code>，<code>#fields.errors('*')</code>等同于<code>#fields.allErrors()</code>，可根据需要随意选择</p>
+		</li>
+		<li>
+			<p>全局错误（包括没有关联到表单项的错误信息）</p>
+			<p>将这两个方法<code>#fields.hasErrors('*')</code>和<code>#fields.errors('*')</code>的参数改为<code>global</code>即可取得全局错误信息</p>
+			<p>同样的，全局错误信息也有两个专用的获取方法<code>#fields.hasGlobalErrors()</code>和<code>#fields.globalErrors()</code></p>
+		</li>
+		<li>
+			<p>在表单外部显示错误信息</p>
+			<p>只需要将<code>*{...}</code>替换为<code>${...}</code>，在属性前面加上表单<code>th:object</code>属性中指定的bean的名字即可</p>
+			<p>
+				<code>
+				&lt;div th:errors="${myForm}"&gt;...&lt;/div&gt;<br/>
+				&lt;div th:errors="${myForm.date}"&gt;...&lt;/div&gt;<br/>
+				&lt;div th:errors="${myForm.*}"&gt;...&lt;/div&gt;<br/><br/>
+				&lt;div th:if="${#fields.hasErrors('${myForm}')}"&gt;...&lt;/div&gt;<br/>
+				&lt;div th:if="${#fields.hasErrors('${myForm.date}')}"&gt;...&lt;/div&gt;<br/>
+				&lt;div th:if="${#fields.hasErrors('${myForm.*}')}"&gt;...&lt;/div&gt;<br/><br/>
+				&lt;form th:object="${myForm}"&gt;<br/>
+				...<br/>
+				&lt;/form&gt;
+				</code>
+			</p>
+		</li>
+		<li>
+			<p>错误信息对象</p>
+			<p>Thymeleaf提供了表单错误信息的对象，而不是一长串字符串，这样可以更灵活的显示错误信息</p>
+			<p>这些错误对象可以通过<code>#fields.detailedErrors()</code>来取得，该对象有三个属性<code>fieldName(String)</code>、<code>message(String)</code>、<code>global(boolean)</code></p>
+			<p>
+				<code>
+					&lt;ul&gt;<br/>
+					&nbsp;&nbsp;&lt;li th:each="e : ${#fields.detailedErrors()}" th:class="${e.global}? globalerr : fielderr"&gt;<br/>
+					&nbsp;&nbsp;&nbsp;&nbsp;&lt;span th:text="${e.global}? '*' : ${e.fieldName}"&gt;The field name&lt;/span&gt; |<br/>
+					&nbsp;&nbsp;&nbsp;&nbsp;&lt;span th:text="${e.message}"&gt;The error message&lt;/span&gt;<br/>
+					&nbsp;&nbsp;&lt;/li&gt;<br/>
+					&lt;/ul&gt;
+				</code>
+			</p>
+		</li>
+	</ol>
+	<h2>Spring Conversion Service</h2>
+	<ol>
+		<li>
+			<p>双大括号语法</p>
+			<p>使用<code>${{...}}</code>/<code>*{{...}}</code>语法来调用Spring的Conversion Service</p>
+			<p th:text="${num}"></p>
+			<p th:text="${{num}}"></p>
+		</li>
+		<li>
+			<p>在表单中，<code>th:field</code>属性默认应用Conversion Service，此时即使用<code>*{...}</code>也会使用</p>
+		</li>
+		<li>
+			<p>可以使用<code>#conversions</code>工具类手动调用Conversion Service</p>
+			<p th:text="${'Number: ' + #conversions.convert(num,'String')}">...</p>
+			<p>#conversions的工具方法调用方式</p>
+			<ul>
+				<li><code>#conversions.convert(Object,Class)</code>将Object转换为指定的类型Class</li>
+				<li><code>#conversions.convert(Object,String)</code>将Ojbect转换为String，这里的类名可以省略<code>java.lang.</code></li>
+			</ul>
+		</li>
+	</ol>
+	<h2>在Spring的Controller中返回模板部件（部分模板）</h2>
+	<ol>
+		<li>在Controller中指定View的时候可以像<code>th:include、th:replace</code>一样，返回模板的一部分内容</li>
+		<li>
+			<a th:href="@{/fragment1}">Fragment1</a>
+			<div th:fragment="fragment1">
+				This is fragment1 in the index view.
+			</div>
+		</li>
+		<li>
+			<a th:href="@{/fragment2}">Fragment2</a>
+			<div id="fragment2">
+				This is fragment2 in the index view.
+			</div>
+		</li>
+		<li>
+			<a th:href="@{/fragment3}">Fragment3</a>
+			<div th:fragment="fragment3(var1, var2)">
+				<p th:text="${'var1 = ' + var1 + ', var2 = ' + var2 }">This is fragment3 in the index view.</p>
+			</div>
+		</li>
+	</ol>
+</body>
+</html>
